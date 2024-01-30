@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3375590}
   - component: {fileID: 2331998}
   - component: {fileID: 6411946}
-  - component: {fileID: -5889099543993185264}
+  - component: {fileID: -1941891006344564273}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -109,7 +109,7 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: f10c2e64b5383f04f840dea170590ffd, type: 3}
---- !u!114 &-5889099543993185264
+--- !u!114 &-1941891006344564273
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -121,7 +121,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29c31c97b6e46924998567b8a715b95f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tileMaterial: {fileID: 0}
-  tileSize: 1
+  tileMaterial: {fileID: 2100000, guid: d351ae52994b9ee4098fdbdf0146ff24, type: 2}
+  tileSize: 1.5
   yOffset: 0.2
   boardCenter: {x: 0, y: 0, z: 0}
+  deathSize: 0.55
+  deathSpacing: 0.775
+  prefabs:
+  - {fileID: 1800368306485059315, guid: b24cc6181912c414a80cdec6430d0c41, type: 3}
+  - {fileID: 3389996957749995759, guid: bff32b7dffa392b498d87ce8003074ca, type: 3}
+  - {fileID: 3191802322275507375, guid: a723d8ec9a5b5e340a3e176af85f5258, type: 3}
+  - {fileID: 5396044517154157788, guid: 754540946d2146a429cff31f239c339b, type: 3}
+  - {fileID: 1626511464561728453, guid: b4d3c1b13bac71744978faa5d50eddee, type: 3}
+  - {fileID: 8048586469120244026, guid: c7e3b11ea874da94fa172c91730568a8, type: 3}
+  teamMaterials:
+  - {fileID: 2100000, guid: 92888524fa6316e4089a62148590a420, type: 2}
+  - {fileID: 2100000, guid: 9af2b21ce3c5cfc4ea3e1803eb1bdecb, type: 2}

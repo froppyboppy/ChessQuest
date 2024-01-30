@@ -1,17 +1,17 @@
-using System;
-using NUnit.Framework;
-using Unity.Collections;
-using Unity.VisualScripting;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 public class Chessboard : MonoBehaviour
 {
     // Art related
-    [Header("Art stuff")]
+    [Header("Art Settings")]
     [SerializeField] private Material tileMaterial;
-    [SerializeField] private float tileSize = 1.0f;
-    [SerializeField] private float yOffset = 0.2f;
+    [SerializeField] private float tileSize = 1.5f;
+    [SerializeField] private float yOffset = 0.001f;
     [SerializeField] private Vector3 boardCenter = Vector3.zero;
+    [SerializeField] private float deathSize = 0.55f;
+    [SerializeField] private float deathSpacing = 0.775f;
 
     // Prefabs
     [Header("Prefabs & Materials")]
@@ -19,15 +19,22 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private Material[] teamMaterials;
 
 
-    // Logic
+    // Constants
     private const int TILE_COUNT_X = 8; // chessboard x size
     private const int TILE_COUNT_Y = 8; // chessboard y size
+
+    // Tiles, hover tiles, and camera
     private GameObject[,] tiles; // tiles 2D array
     private Camera currentCamera; // camera use in game mode lol
     private Vector2Int currentHover = -Vector2Int.one; // store hitted tile index
     private Vector3 bounds;
+
+    // Chess pieces logic
     private ChessPiece[,] chessPieces; // array contaning pieces in chessboard
     private ChessPiece currentDraggingPiece;
+    private List<ChessPiece> deadWhilesList = new List<ChessPiece>();
+    private List<ChessPiece> deadBlacksList = new List<ChessPiece>();
+
 
     private void Awake()
     {
@@ -101,7 +108,14 @@ public class Chessboard : MonoBehaviour
                     currentDraggingPiece.SetPosition(GetTileCenter(previousPosition.x, previousPosition.y));
                     currentDraggingPiece = null;
                 }
+
+                else
+                {
+                    currentDraggingPiece = null;
+                }
             }
+
+
         }
 
         // Mouse (Ray) is not on chessboard
@@ -112,6 +126,24 @@ public class Chessboard : MonoBehaviour
                 // Reset the previous tile to "Tile" layer
                 tiles[currentHover.x, currentHover.y].layer = LayerMask.NameToLayer("Tile");
                 currentHover = -Vector2Int.one;
+            }
+
+            if (currentDraggingPiece && Input.GetMouseButtonUp(0))
+            {
+                currentDraggingPiece.SetPosition(GetTileCenter(currentDraggingPiece.currentX, currentDraggingPiece.currentY));
+                currentDraggingPiece = null;
+            }
+        }
+
+
+        // Dragging effect
+        if (currentDraggingPiece)
+        {
+            Plane horizantalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
+            float distance = 0.0f;
+            if (horizantalPlane.Raycast(ray, out distance))
+            {
+                currentDraggingPiece.SetPosition(ray.GetPoint(distance));
             }
         }
     }
@@ -280,7 +312,7 @@ public class Chessboard : MonoBehaviour
     {
         Vector2Int previousPosition = new Vector2Int(chessPiece.currentX, chessPiece.currentY);
 
-        // avoid placing pieces in acopied positions
+        // avoid placing pieces in same team positions
         if (chessPieces[x, y] != null)
         {
             ChessPiece otherChessPiece = chessPieces[x, y];
@@ -288,6 +320,30 @@ public class Chessboard : MonoBehaviour
             if (chessPiece.team == otherChessPiece.team)
             {
                 return false;
+            }
+
+            //avoid placing pieces in rival team positions
+            // Avoid by 'killing' the rival
+            if (otherChessPiece.team == 0)
+            {
+                // add to dead list : white
+                deadWhilesList.Add(otherChessPiece);
+
+                // Change scale and position outside chessboard
+                otherChessPiece.SetScale(Vector3.one * deathSize);
+                otherChessPiece.SetPosition(new Vector3(8 * tileSize, yOffset, -1 * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2) + (Vector3.forward * deathSpacing) * deadWhilesList.Count);
+
+            }
+
+            else
+            {
+                // add to dead list : white
+                deadBlacksList.Add(otherChessPiece);
+
+                // Change scale and position outside chessboard
+                otherChessPiece.SetScale(Vector3.one * deathSize);
+                otherChessPiece.SetPosition(new Vector3(-1 * tileSize, yOffset, 8 * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2) + (Vector3.back * deathSpacing) * deadBlacksList.Count);
+
             }
         }
 

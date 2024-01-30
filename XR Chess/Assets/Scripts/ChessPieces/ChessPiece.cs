@@ -22,13 +22,14 @@ public class ChessPiece : MonoBehaviour
     private Vector3 desiredPosition;
     private Vector3 desiredScale = Vector3.one;  // Descalate piece when die
 
+    // Make pieces move and scale smoother when updating state
     private void Update()
     {
-
         transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * 10);
         transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * 10);
     }
 
+    // Make pieces move smoother
     public virtual void SetPosition(Vector3 position, bool force = false)
     {
         desiredPosition = position;
@@ -38,6 +39,7 @@ public class ChessPiece : MonoBehaviour
         }
     }
 
+    // Make pieces scale smoother
     public virtual void SetScale(Vector3 scale, bool force = false)
     {
         desiredScale = scale;
