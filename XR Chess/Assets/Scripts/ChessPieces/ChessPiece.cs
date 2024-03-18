@@ -25,17 +25,17 @@ public class ChessPiece : MonoBehaviour
     private Vector3 desiredScale = Vector3.one;  // Descalate piece when die
     public List<Vector2Int> GetAvailableMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
     {
-        List<Vector2Int> returnMoves = new List<Vector2Int>();
-
-        /*
-        returnMoves.Add(new Vector2Int(3, 3));
-        returnMoves.Add(new Vector2Int(3, 4));
-        returnMoves.Add(new Vector2Int(4, 3));
-        returnMoves.Add(new Vector2Int(4, 4));
-        */
+        List<Vector2Int> returnMoves = new List<Vector2Int>
+        {
+            new Vector2Int(3, 3),
+            new Vector2Int(3, 4),
+            new Vector2Int(4, 3),
+            new Vector2Int(4, 4)
+        };
 
         return returnMoves;
     }
+
 
     // Make pieces move and scale smoother when updating state
     private void Update()
@@ -63,5 +63,6 @@ public class ChessPiece : MonoBehaviour
             transform.localScale = desiredScale;
         }
     }
+
 
 }
