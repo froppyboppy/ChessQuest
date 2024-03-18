@@ -14,7 +14,12 @@ public class Chessboard : MonoBehaviour
 
     // Prefabs
     [Header("Prefabs & Materials")]
-    [SerializeField] private GameObject[] prefabs;
+    // [SerializeField] private GameObject[] prefabs;
+    // [SerializeField] private Material[] teamMaterials;
+
+    // New
+    [SerializeField] private GameObject[] whitePiecePrefabs;
+    [SerializeField] private GameObject[] blackPiecePrefabs;
     [SerializeField] private Material[] teamMaterials;
 
 
@@ -263,11 +268,21 @@ public class Chessboard : MonoBehaviour
     private ChessPiece SpawnSinglePiece(ChessPieceType type, int team)
     {
         // Use Instantiate without 'new'
-        GameObject pieceObject = Instantiate(prefabs[(int)type - 1], transform.position, Quaternion.identity, transform);
+        GameObject[] prefabsArray = team == 0 ? whitePiecePrefabs : blackPiecePrefabs;
+
+        // Determine the rotation based on the team
+        Quaternion rotation = team == 0 ? Quaternion.identity : Quaternion.Euler(0, 180, 0);
+        GameObject pieceObject = Instantiate(prefabsArray[(int)type - 1], transform.position, rotation, transform);
         ChessPiece chessPiece = pieceObject.GetComponent<ChessPiece>();
         chessPiece.type = type;
         chessPiece.team = team;
-        chessPiece.GetComponent<MeshRenderer>().material = teamMaterials[team];
+
+        // Assuming you have corrected the access to MeshRenderer as discussed previously
+        MeshRenderer meshRenderer = chessPiece.GetComponentInChildren<MeshRenderer>();
+        if (meshRenderer != null)
+        {
+            meshRenderer.material = teamMaterials[team];
+        }
 
         return chessPiece;
     }
