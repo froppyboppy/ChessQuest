@@ -1,15 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
 
 public class Chessboard : MonoBehaviour
 {
     // Art related
     [Header("Art Settings")]
     [SerializeField] private Material tileMaterial;
-    [SerializeField] private float tileSize = 1.5f;
-    [SerializeField] private float yOffset = 0.001f;
-    [SerializeField] private Vector3 boardCenter = Vector3.zero;
+    [SerializeField] private float tileSize = 2.0f;
+    [SerializeField] private float yOffset = 6.0f;
+    [SerializeField] private Vector3 boardCenter = new Vector3(-0.23f, 0.0f, 0.8f);
     [SerializeField] private float deathSize = 0.55f;
     [SerializeField] private float deathSpacing = 0.775f;
 
@@ -34,8 +33,10 @@ public class Chessboard : MonoBehaviour
     private ChessPiece currentDraggingPiece;
     private List<ChessPiece> deadWhilesList = new List<ChessPiece>();
     private List<ChessPiece> deadBlacksList = new List<ChessPiece>();
+    private List<Vector2Int> availableMoves = new List<Vector2Int>();
 
 
+    // Main function running whole script
     private void Awake()
     {
         // Generates tiles layer
@@ -43,11 +44,13 @@ public class Chessboard : MonoBehaviour
 
         // Spawn all pieces
         SpawnAllPieces();
+        //SpawnSinglePiece(ChessPieceType.King, 1);
 
         // Position pieces
         PositionAllPieces();
     }
 
+    // Updates game every time user or chessboard moves
     private void Update()
     {
         // Generate game camera
@@ -64,6 +67,8 @@ public class Chessboard : MonoBehaviour
         // Mouse (Ray) is on board
         if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile", "Hover")))
         {
+            // Logging the name of the object that the raycast hit
+            // Debug.Log("Raycast hit: " + info.transform.name);
 
             // Get tile coordinate hitted by mouse ray
             Vector2Int hitPosition = LookupTileIndex(info.transform.gameObject);
@@ -91,9 +96,16 @@ public class Chessboard : MonoBehaviour
                     if (true)
                     {
                         currentDraggingPiece = chessPieces[hitPosition.x, hitPosition.y];
+
+                        // available moves list
+                        availableMoves = currentDraggingPiece.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+
+                        // Highlight valid move tiles
+                        HighlightTiles();
                     }
                 }
             }
+
 
             // Mouse realeasing with a chess piece
             if (currentDraggingPiece != null && Input.GetMouseButtonUp(0))
@@ -116,6 +128,7 @@ public class Chessboard : MonoBehaviour
             }
 
 
+
         }
 
         // Mouse (Ray) is not on chessboard
@@ -128,13 +141,13 @@ public class Chessboard : MonoBehaviour
                 currentHover = -Vector2Int.one;
             }
 
+            // release chesspiece after dragging
             if (currentDraggingPiece && Input.GetMouseButtonUp(0))
             {
                 currentDraggingPiece.SetPosition(GetTileCenter(currentDraggingPiece.currentX, currentDraggingPiece.currentY));
                 currentDraggingPiece = null;
             }
         }
-
 
         // Dragging effect
         if (currentDraggingPiece)
@@ -197,7 +210,8 @@ public class Chessboard : MonoBehaviour
         return tileObject;
     }
 
-    // Pieces spawning
+
+    // All pieces spawning in board
     private void SpawnAllPieces()
     {
         // chess pieces array instance
@@ -241,6 +255,11 @@ public class Chessboard : MonoBehaviour
         }
     }
 
+    /*
+        Spawn single piece in board
+        @param ChessPieceType type
+        @param int team
+    */
     private ChessPiece SpawnSinglePiece(ChessPieceType type, int team)
     {
         // Use Instantiate without 'new'
@@ -279,6 +298,26 @@ public class Chessboard : MonoBehaviour
     private Vector3 GetTileCenter(int x, int y)
     {
         return new Vector3(x * tileSize, yOffset, y * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2);
+    }
+
+    // Hightlight given tiles in availableMoves list
+    private void HighlightTiles()
+    {
+        for (int move = 0; move < availableMoves.Count; move++)
+        {
+            tiles[availableMoves[move].x, availableMoves[move].y].layer = LayerMask.NameToLayer("Highlight");
+        }
+    }
+
+    // Remove hightlighted given tiles
+    private void RemoveHighlightTiles()
+    {
+        for (int move = 0; move < availableMoves.Count; move++)
+        {
+            tiles[availableMoves[move].x, availableMoves[move].y].layer = LayerMask.NameToLayer("Tile");
+
+            availableMoves.Clear();
+        }
     }
 
     //Operations
@@ -355,4 +394,5 @@ public class Chessboard : MonoBehaviour
         return true;
 
     }
+
 }
