@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor.ShaderGraph;
 using UnityEngine;
 
 public class Chessboard : MonoBehaviour
@@ -360,6 +361,11 @@ public class Chessboard : MonoBehaviour
 
     private bool MoveTo(ChessPiece chessPiece, int x, int y)
     {
+        if (!ContainsValidMove(ref availableMoves, new Vector2(x, y)))
+        {
+            return false;
+        }
+
         Vector2Int previousPosition = new Vector2Int(chessPiece.currentX, chessPiece.currentY);
 
         // avoid placing pieces in same team positions

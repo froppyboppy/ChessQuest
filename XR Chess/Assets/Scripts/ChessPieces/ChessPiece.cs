@@ -23,7 +23,7 @@ public class ChessPiece : MonoBehaviour
 
     private Vector3 desiredPosition;
     private Vector3 desiredScale = Vector3.one;  // Descalate piece when die
-    public List<Vector2Int> GetAvailableMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
+    public virtual List<Vector2Int> GetAvailableMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
     {
         List<Vector2Int> returnMoves = new List<Vector2Int>
         {
