@@ -41,10 +41,15 @@ public class Chessboard : MonoBehaviour
     private List<ChessPiece> deadBlacksList = new List<ChessPiece>();
     private List<Vector2Int> availableMoves = new List<Vector2Int>();
 
+    // team turn
+    private bool isWhiteTurn;
+
 
     // Main function running whole script
     private void Awake()
     {
+        isWhiteTurn = true;
+
         // Generates tiles layer
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
 
@@ -100,7 +105,7 @@ public class Chessboard : MonoBehaviour
                 if (chessPieces[hitPosition.x, hitPosition.y] != null)
                 {
                     // Check turn
-                    if (true)
+                    if ((chessPieces[hitPosition.x, hitPosition.y].team == 0 && isWhiteTurn) || (chessPieces[hitPosition.x, hitPosition.y].team == 1 && !isWhiteTurn))
                     {
                         currentDraggingPiece = chessPieces[hitPosition.x, hitPosition.y];
 
@@ -407,6 +412,8 @@ public class Chessboard : MonoBehaviour
         chessPieces[previousPosition.x, previousPosition.y] = null;
 
         PositionSinglePiece(x, y);
+
+        isWhiteTurn = !isWhiteTurn;
 
         return true;
 
