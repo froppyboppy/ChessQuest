@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor.ShaderGraph;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Chessboard : MonoBehaviour
 {
@@ -12,6 +14,7 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private Vector3 boardCenter = new Vector3(-0.23f, 0.0f, 0.8f);
     [SerializeField] private float deathSize = 0.55f;
     [SerializeField] private float deathSpacing = 0.775f;
+    [SerializeField] private GameObject victoryScreen;
 
     // Prefabs
     [Header("Prefabs & Materials")]
@@ -55,7 +58,6 @@ public class Chessboard : MonoBehaviour
 
         // Spawn all pieces
         SpawnAllPieces();
-        //SpawnSinglePiece(ChessPieceType.King, 1);
 
         // Position pieces
         PositionAllPieces();
@@ -383,10 +385,17 @@ public class Chessboard : MonoBehaviour
                 return false;
             }
 
-            //avoid placing pieces in rival team positions
+            // avoid placing pieces in rival team positions
             // Avoid by 'killing' the rival
             if (otherChessPiece.team == 0)
             {
+                // check mate - Black wins
+                if (otherChessPiece.type == ChessPieceType.King)
+                {
+                    // display win-loss screen
+                    CheckMate(1);
+                }
+
                 // add to dead list : white
                 deadWhilesList.Add(otherChessPiece);
 
@@ -396,8 +405,16 @@ public class Chessboard : MonoBehaviour
 
             }
 
+            // black
             else
             {
+                // checkmate - white wins
+                if (otherChessPiece.type == ChessPieceType.King)
+                {
+                    // display win-loss screen
+                    CheckMate(0);
+                }
+
                 // add to dead list : white
                 deadBlacksList.Add(otherChessPiece);
 
@@ -417,6 +434,69 @@ public class Chessboard : MonoBehaviour
 
         return true;
 
+    }
+
+    // Checkmate
+    private void CheckMate(int team)
+    {
+        DisplayVictory(team);
+    }
+
+    // Diplay victory screen depending on winning team
+    private void DisplayVictory(int winningTeam)
+    {
+        victoryScreen.SetActive(true);
+        victoryScreen.transform.GetChild(winningTeam).gameObject.SetActive(true);
+    }
+
+    public void OnResetButton()
+    {
+        // Clean victory UI
+        victoryScreen.transform.GetChild(0).gameObject.SetActive(false);
+        victoryScreen.transform.GetChild(1).gameObject.SetActive(false);
+        victoryScreen.SetActive(false);
+
+        // Field reset
+        currentDraggingPiece = null;
+        availableMoves = new List<Vector2Int>();
+
+        // clean up chessboard and game objects
+        for (int x = 0; x < TILE_COUNT_X; x++)
+        {
+            for (int y = 0; y < TILE_COUNT_Y; y++)
+            {
+                if (chessPieces[x, y] != null)
+                {
+                    Destroy(chessPieces[x, y].gameObject);
+                }
+
+                chessPieces[x, y] = null;
+            }
+        }
+
+        // clean dead pieces
+        for (int i = 0; i < deadWhilesList.Count; i++)
+        {
+            Destroy(deadWhilesList[i].gameObject);
+        }
+
+        for (int i = 0; i < deadBlacksList.Count; i++)
+        {
+            Destroy(deadBlacksList[i].gameObject);
+        }
+
+        deadWhilesList.Clear();
+        deadBlacksList.Clear();
+
+        // Spawn all pieces and start again
+        SpawnAllPieces();
+        PositionAllPieces();
+        isWhiteTurn = true;
+    }
+
+    public void OnExitButton()
+    {
+        Application.Quit();
     }
 
     private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2 pos)
