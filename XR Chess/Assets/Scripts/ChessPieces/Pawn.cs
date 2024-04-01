@@ -57,6 +57,12 @@ public class Pawn : ChessPiece
     {
         int direction = (team == 0) ? 1 : -1;
 
+        // Promotion
+        if ((team == 0 && currentY == 6) || (team == 1 && currentY == 1))
+        {
+            return SpecialMove.Promotion;
+        }
+
         // En Passant
         // check if there is a previous move
         if (moveList.Count > 0)
