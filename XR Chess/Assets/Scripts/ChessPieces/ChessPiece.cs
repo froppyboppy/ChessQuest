@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
+using UnityEditor.ShaderGraph;
 using UnityEngine;
 
 public enum ChessPieceType
@@ -62,6 +63,12 @@ public class ChessPiece : MonoBehaviour
         {
             transform.localScale = desiredScale;
         }
+    }
+
+    public virtual SpecialMove GetSpecialMoves(ref ChessPiece[,] board, ref List<Vector2Int[]> moveList, ref List<Vector2Int> availableMoves)
+    {
+
+        return SpecialMove.None;
     }
 
 
