@@ -461,6 +461,7 @@ public class Chessboard : MonoBehaviour
     // Special Moves
     private void processSpecialMove()
     {
+        // En passant
         if (specialMove == SpecialMove.EnPassant)
         {
             var newMove = moveList[moveList.Count - 1];
@@ -494,6 +495,56 @@ public class Chessboard : MonoBehaviour
 
                     // delete chesspiece reference
                     chessPieces[enemyPawn.currentX, enemyPawn.currentY] = null;
+                }
+            }
+        }
+
+        // Castling
+        if (specialMove == SpecialMove.Castling)
+        {
+            Vector2Int[] lastMove = moveList[moveList.Count - 1];
+
+            // Left rook
+            if (lastMove[1].x == 2)
+            {
+                // white side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[0, 0];
+                    chessPieces[3, 0] = rook;
+                    PositionSinglePiece(3, 0);
+                    chessPieces[0, 0] = null;
+                }
+
+                // black side
+                if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[0, 7];
+                    chessPieces[3, 7] = rook;
+                    PositionSinglePiece(3, 7);
+                    chessPieces[0, 7] = null;
+                }
+            }
+
+            // right rook
+            if (lastMove[1].x == 6)
+            {
+                // white side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[7, 0];
+                    chessPieces[5, 0] = rook;
+                    PositionSinglePiece(5, 0);
+                    chessPieces[7, 0] = null;
+                }
+
+                // black side
+                if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[7, 7];
+                    chessPieces[5, 7] = rook;
+                    PositionSinglePiece(5, 7);
+                    chessPieces[7, 7] = null;
                 }
             }
         }
