@@ -451,6 +451,11 @@ public class Chessboard : MonoBehaviour
 
         processSpecialMove();
 
+        if (CheckForCheckmate())
+        {
+            CheckMate(chessPiece.team);
+        }
+
         return true;
 
     }
@@ -459,6 +464,76 @@ public class Chessboard : MonoBehaviour
     private void CheckMate(int team)
     {
         DisplayVictory(team);
+    }
+
+    private bool CheckForCheckmate()
+    {
+        var lastMove = moveList[moveList.Count - 1];
+        int targetTeam = (chessPieces[lastMove[1].x, lastMove[1].y].team == 0) ? 1 : 0;
+
+        // king reference
+        List<ChessPiece> attackingPieces = new List<ChessPiece>();
+        List<ChessPiece> defendingPieces = new List<ChessPiece>();
+
+        ChessPiece targetKing = null;
+        for (int x = 0; x < TILE_COUNT_X; x++)
+        {
+            for (int y = 0; y < TILE_COUNT_Y; y++)
+            {
+                if (chessPieces[x, y] != null)
+                {
+                    if (chessPieces[x, y].team == targetTeam)
+                    {
+                        defendingPieces.Add(chessPieces[x, y]);
+
+                        if (chessPieces[x, y].type == ChessPieceType.King)
+                        {
+                            targetKing = chessPieces[x, y];
+                        }
+                    }
+
+                    else
+                    {
+                        attackingPieces.Add(chessPieces[x, y]);
+                    }
+                }
+            }
+        }
+
+        // check if king is being attacked
+        List<Vector2Int> currentAvailableMoves = new List<Vector2Int>();
+        for (int i = 0; i < attackingPieces.Count; i++)
+        {
+            var pieceMoves = attackingPieces[i].GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+
+            for (int b = 0; b < pieceMoves.Count; b++)
+            {
+                currentAvailableMoves.Add(pieceMoves[b]);
+            }
+        }
+
+        // Check if king is in check
+        if (ContainsValidMove(ref currentAvailableMoves, new Vector2Int(targetKing.currentX, targetKing.currentY)))
+        {
+            // if under attack, check for prevention
+            for (int i = 0; i < defendingPieces.Count; i++)
+            {
+                List<Vector2Int> defendingMoves = defendingPieces[i].GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                SimulateMoveForSinglePiece(defendingPieces[i], ref defendingMoves, targetKing);
+
+                // Check but not in checkmate
+                if (defendingMoves.Count != 0)
+                {
+                    return false;
+                }
+            }
+
+            // In checkmate
+            return true;
+
+        }
+
+        return false;
     }
 
     // Special Moves
