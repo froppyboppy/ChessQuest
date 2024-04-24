@@ -3,13 +3,29 @@ using Unity.VisualScripting;
 using UnityEditor.ShaderGraph;
 using UnityEngine;
 using UnityEngine.UIElements;
-
+using System.Collections;
+using UnityEngine.Networking;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System;
+using System.Text.Json;
+using System.Threading;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using SimpleJSON;
 public enum SpecialMove
 {
     None = 0,
     EnPassant = 1,
     Castling = 2,
     Promotion = 3
+}
+
+public enum GameState
+{
+    WaitingForWhiteMove,
+    WaitingForBlackMove
 }
 
 public class Chessboard : MonoBehaviour
@@ -53,15 +69,30 @@ public class Chessboard : MonoBehaviour
     private List<Vector2Int> availableMoves = new List<Vector2Int>();
     private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
     private SpecialMove specialMove;
+    private string mostRecentUserMove;
+
+    //lichess move list
+    private List<string> lichessMoveList = new List<string>();
+
+    // Lichess API account info
+    public string apiToken = "lip_mFklnRWDapFwCTqP1lDG"; // juan's api token
+    public string gameId; // game id
+    private string username = "froppyboppy"; // username
+    private bool receivedFirstNDJSON = false; // flag for first NDJSON message
+
+    private Coroutine streamingCoroutine;
+    private bool streaming = true;
 
     // team turn
     private bool isWhiteTurn;
-
+    private bool setupAndStreamingCompleted = false;
 
     // Main function running whole script
-    private void Awake()
+    private async void Awake()
     {
-        isWhiteTurn = true;
+        //StartNewGame();
+        //isWhiteTurn = true;
+        Debug.Log("Game started once");
 
         // Generates tiles layer
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
@@ -71,18 +102,44 @@ public class Chessboard : MonoBehaviour
 
         // Position pieces
         PositionAllPieces();
+
+        // Start event streaming in the background
+        StartCoroutine(GameSetupAndStreamEvents());
+        isWhiteTurn = true;
     }
 
-    // Updates game every time user or chessboard moves
+        // Updates game every time user or chessboard moves
     private void Update()
     {
         // Generate game camera
+
         if (!currentCamera)
         {
             currentCamera = Camera.main;
             return;
         }
 
+        // Check if it's white's turn
+        if (isWhiteTurn)
+        {
+            // Process white player's move
+            ProcessWhiteMove();
+            //Debug.Log("White move happened");
+            isWhiteTurn = false;
+
+        }
+        else
+        {
+            // Process black player's move or bot's move
+            //Debug.Log("Black move or bot's move happened");
+            ProcessBlackMove();
+            isWhiteTurn = true;
+        }
+    }
+
+    // Method to process white player's move
+    private void ProcessWhiteMove()
+    {
         // Mouse input as ray with 100 unit range
         RaycastHit info;
         Ray ray = currentCamera.ScreenPointToRay(Input.mousePosition);
@@ -117,7 +174,7 @@ public class Chessboard : MonoBehaviour
                 if (chessPieces[hitPosition.x, hitPosition.y] != null)
                 {
                     // Check turn
-                    if ((chessPieces[hitPosition.x, hitPosition.y].team == 0 && isWhiteTurn) || (chessPieces[hitPosition.x, hitPosition.y].team == 1 && !isWhiteTurn))
+                    if ((chessPieces[hitPosition.x, hitPosition.y].team == 0 && isWhiteTurn))
                     {
                         currentDraggingPiece = chessPieces[hitPosition.x, hitPosition.y];
 
@@ -136,8 +193,7 @@ public class Chessboard : MonoBehaviour
                 }
             }
 
-
-            // Mouse realeasing with a chess piece
+            // Mouse releasing with a chess piece
             if (currentDraggingPiece != null && Input.GetMouseButtonUp(0))
             {
                 Vector2Int previousPosition = new Vector2Int(currentDraggingPiece.currentX, currentDraggingPiece.currentY);
@@ -155,6 +211,7 @@ public class Chessboard : MonoBehaviour
                     currentDraggingPiece = null;
                 }
                 RemoveHighlightTiles();
+                //isWhiteTurn = false; // After white's move, set isWhiteTurn to false
             }
         }
 
@@ -188,6 +245,18 @@ public class Chessboard : MonoBehaviour
             }
         }
     }
+
+    // Method to process black player's move or bot's move
+    private void ProcessBlackMove()
+    {
+        // Implement the logic for black's move or bot's move here
+        //Debug.Log("Black move or bot's move happened");
+        //wait for 5 seconds
+
+        // After processing black's move, set isWhiteTurn to true
+        isWhiteTurn = true;
+    }
+
 
     // Generate Board methods
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
@@ -455,6 +524,21 @@ public class Chessboard : MonoBehaviour
         {
             CheckMate(chessPiece.team);
         }
+
+        // Retrieve the last move from moveList
+        Vector2Int[] lastMove = moveList[moveList.Count - 1];
+
+        // Convert the last move to UCI notation
+        string uciMove = ConvertToUCI(lastMove);
+
+        // Store the UCI notation in mostRecentUserMove
+        mostRecentUserMove = uciMove;
+
+        MakeMove(mostRecentUserMove);
+        Debug.Log("Whites most recent move: " + mostRecentUserMove);
+        lichessMoveList.Add(mostRecentUserMove);
+        
+        //GetGameInfo();
 
         return true;
 
@@ -835,4 +919,186 @@ public class Chessboard : MonoBehaviour
 
         return false;
     }
+
+    private void MakeMove(string move)
+    {
+        StartCoroutine(MakeMoveCoroutine(move));
+    }
+    /**
+     * Start the game by making an API call to Lichess to challenge the bot
+     */
+    private IEnumerator StartNewGameCoroutine(int level, string color = "white")
+    {
+        WWWForm form = new WWWForm();
+        form.AddField("level", level.ToString());  // Level can be adjusted but for now, we'll keep it at 1
+        form.AddField("color", color);  // Specify the color
+        form.AddField("clock.limit", "10800");  // Add clock limit
+        form.AddField("clock.increment", "1");  // Add clock increment
+        UnityWebRequest www = UnityWebRequest.Post("https://lichess.org/api/challenge/ai", form);
+        www.SetRequestHeader("Authorization", "Bearer " + apiToken);
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError("Error while starting a new game: " + www.error);
+        }
+        else
+        {
+            Debug.Log("Game started, lets go: " + www.downloadHandler.text);
+            
+            // Parse the JSON response to extract the game ID
+            string gameId = ParseGameId(www.downloadHandler.text);
+            Debug.Log("Game ID, lets go: " + gameId);
+            
+            // You can assign the game ID to a class variable if needed
+            this.gameId = gameId;
+        }
+        yield return new WaitForSeconds(1f); // Adjust as needed
+    }
+    // Define classes to deserialize JSON response
+    [System.Serializable]
+    public class State
+    {
+        public string type;
+        public string moves;
+        public int wtime;
+        public int btime;
+        public int winc;
+        public int binc;
+        public string status;
+    }
+
+    [System.Serializable]
+    public class RootObject
+    {
+        public string id;
+        public State state;
+    }
+
+
+    private IEnumerator MakeMoveCoroutine(string move)
+    {
+        WWWForm form = new WWWForm();
+        string url = $"https://lichess.org/api/board/game/{gameId}/move/{move}";
+
+        UnityWebRequest www = UnityWebRequest.Post(url, form);
+
+        www.SetRequestHeader("Authorization", "Bearer " + apiToken);
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError("Error while making a move: " + www.error);
+        }
+        else
+        {
+            Debug.Log("White Move made was: " + move);
+        }
+    }
+
+
+
+    private string ParseGameId(string jsonResponse)
+    {
+        // Deserialize the JSON string into GameIdData object
+        GameIdData data = JsonUtility.FromJson<GameIdData>(jsonResponse);
+
+        // Return the game ID
+        return data.id;
+    }
+
+    [System.Serializable]
+    public class GameIdData
+    {
+        public string id;
+    }
+    public class MostRecentUserMove
+    {
+        public string move;
+    }
+
+    private string ConvertToUCI(Vector2Int[] move)
+    {
+        // Convert the start position to algebraic notation
+        string fromSquare = ConvertToAlgebraicNotation(move[0].x, move[0].y);
+        // Convert the end position to algebraic notation
+        string toSquare = ConvertToAlgebraicNotation(move[1].x, move[1].y);
+
+        // Concatenate the start and end positions to form the UCI move
+        string uciMove = fromSquare + toSquare;
+
+        // Assign the UCI move to mostRecentUserMove directly
+        mostRecentUserMove = uciMove;
+
+        // Return the UCI move
+        return uciMove;
+    }
+
+    private string ConvertToAlgebraicNotation(int x, int y)
+    {
+        char file = (char)('a' + x);
+        int rank = y + 1;
+        return $"{file}{rank}";
+    }
+
+    private IEnumerator GameSetupAndStreamEvents()
+    {
+        int default_level = 1;  // Default level is 1
+        // Start a new game and wait for it to complete
+        yield return StartCoroutine(StartNewGameCoroutine(default_level));
+
+        // Start event streaming in the background
+        streamingCoroutine = StartCoroutine(StreamEvents());
+    }
+
+    // Method to handle event streaming
+    private IEnumerator StreamEvents()
+    {
+        Debug.Log("StreamEvents coroutine started.");
+
+        while (streaming)
+        {
+            string streamurl = $"https://lichess.org/api/board/game/stream/{gameId}";
+            using (UnityWebRequest request = UnityWebRequest.Get(streamurl))
+            {
+                request.SetRequestHeader("Authorization", "Bearer " + apiToken);
+                request.SetRequestHeader("Accept", "application/x-ndjson");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    using (StreamReader reader = new StreamReader(new MemoryStream(request.downloadHandler.data)))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (!string.IsNullOrEmpty(line))
+                            {
+                                Debug.Log("Received JSON data: " + line); // Log received JSON data
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Failed to connect to the event stream: " + request.error); // Log error message
+                }
+            }
+
+            // Wait before reconnecting
+            yield return new WaitForSeconds(5); // Adjust as needed
+        }
+    }
+
+
+    private void OnDestroy()
+    {
+        // Stop the coroutine when the object is destroyed
+        if (streamingCoroutine != null)
+        {
+            StopCoroutine(streamingCoroutine);
+        }
+    }
+
 }
