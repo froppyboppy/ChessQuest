@@ -1,31 +1,30 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.ShaderGraph;
+//using Unity.VisualScripting;
+//using UnityEditor.ShaderGraph;
+using UnityEngine;
+//using UnityEngine.UIElements;
+using UnityEngine.Networking;
+using System.Threading.Tasks;
+using System;
+using System.Collections;
+//using Unity.VisualScripting;
+//using UnityEditor.ShaderGraph;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Collections;
-using UnityEngine.Networking;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System;
-using System.Text.Json;
-using System.Threading;
-using System.Net.Http;
+//using System.Text.Json;
+//using System.Threading;
 using System.Net.Http.Headers;
-using SimpleJSON;
+using UnityEditor;
+
 public enum SpecialMove
 {
     None = 0,
     EnPassant = 1,
     Castling = 2,
     Promotion = 3
-}
-
-public enum GameState
-{
-    WaitingForWhiteMove,
-    WaitingForBlackMove
 }
 
 public class Chessboard : MonoBehaviour
@@ -69,30 +68,32 @@ public class Chessboard : MonoBehaviour
     private List<Vector2Int> availableMoves = new List<Vector2Int>();
     private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
     private SpecialMove specialMove;
-    private string mostRecentUserMove;
-
-    //lichess move list
-    private List<string> lichessMoveList = new List<string>();
-
-    // Lichess API account info
-    public string apiToken = "lip_mFklnRWDapFwCTqP1lDG"; // juan's api token
-    public string gameId; // game id
-    private string username = "froppyboppy"; // username
-    private bool receivedFirstNDJSON = false; // flag for first NDJSON message
-
-    private Coroutine streamingCoroutine;
-    private bool streaming = true;
+    private string mostRecentUserMove; // UCI notation of the most recent move
 
     // team turn
     private bool isWhiteTurn;
-    private bool setupAndStreamingCompleted = false;
+
+    // Lichess Stuff
+    public string apiToken = "lip_mFklnRWDapFwCTqP1lDG"; // juan's api token
+    public string gameId; // game id
+                          //lichess move list
+    private List<string> lichessMoveList = new List<string>();
+    private bool blackMoveReceived;
+
+    public int currentMoveNumber = 1;
+
+    // Streaming stuff
+    private Coroutine streamingCoroutine;
+    private bool streaming = true;
+    private bool gameIdStored = false; // Initialize gameIdStored
+
+
 
     // Main function running whole script
-    private async void Awake()
+    private void Awake()
     {
-        //StartNewGame();
-        //isWhiteTurn = true;
-        Debug.Log("Game started once");
+        isWhiteTurn = true;
+        blackMoveReceived = false;
 
         // Generates tiles layer
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
@@ -103,49 +104,43 @@ public class Chessboard : MonoBehaviour
         // Position pieces
         PositionAllPieces();
 
-        // Start event streaming in the background
-        StartCoroutine(GameSetupAndStreamEvents());
-        isWhiteTurn = true;
+        //start game
+        //StartNewGame(1); // Level 1
+        StartCoroutine(StartNewGameCoroutine(1));
+        streamingCoroutine = StartCoroutine(StreamEventsCoroutine());
+
+        EnterGame();
     }
 
-        // Updates game every time user or chessboard moves
+    // game flow and transition through states aka alternating black and white turns
+    private void EnterGame()
+    {
+        if (isWhiteTurn)
+        {
+            // user can make move
+
+        }
+        else
+        {
+            //wait for black move to be recieved
+
+        }
+    }
+
+    // Updates game every time user or chessboard moves
     private void Update()
     {
         // Generate game camera
-
         if (!currentCamera)
         {
             currentCamera = Camera.main;
             return;
         }
 
-        // Check if it's white's turn
-        if (isWhiteTurn)
-        {
-            // Process white player's move
-            ProcessWhiteMove();
-            //Debug.Log("White move happened");
-            isWhiteTurn = false;
-
-        }
-        else
-        {
-            // Process black player's move or bot's move
-            //Debug.Log("Black move or bot's move happened");
-            ProcessBlackMove();
-            isWhiteTurn = true;
-        }
-    }
-
-    // Method to process white player's move
-    private void ProcessWhiteMove()
-    {
         // Mouse input as ray with 100 unit range
         RaycastHit info;
         Ray ray = currentCamera.ScreenPointToRay(Input.mousePosition);
 
-        // Mouse (Ray) is on board 
-        // Allowed layers to position pieces
         if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile", "Hover", "Highlight")))
         {
             // Logging the name of the object that the raycast hit
@@ -167,96 +162,305 @@ public class Chessboard : MonoBehaviour
                 currentHover = hitPosition;
                 tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
             }
+        }
 
-            // Mouse press down
-            if (Input.GetMouseButtonDown(0))
+
+        // - - - - - - - Testing - - - - - - - 
+
+        //black turn
+        //         if (!isWhiteTurn)
+        //         {
+        //             //Debug.Log("Black turn is about to happen");
+        //             //Debug.Log("Current Move number is " + currentMoveNumber);
+
+        //             // //here we need to wait on the logic until lichessMoveList is the same length as currentMoveNumber
+        //             foreach (string wah in lichessMoveList)
+        //             {
+        //                 Debug.Log(wah);
+        //             }
+        //             Debug.Log("about to hit block");
+        //             //HaveWeReceivedBlackMove();
+        //             //blackMoveReceived = false;
+        //             Debug.Log("Black turn has started");
+        //             // get the last move from lichessMoveList
+        //             // string lastMove = lichessMoveList[lichessMoveList.Count - 1];
+        //             // //string uciMove = "d2d3";
+        //             // Vector2Int[] move = ConvertToVectorNotation(lastMove);
+
+        //             // // Convert the last move from UCI notation
+
+        //             // ChessPiece blackP = chessPieces[2, 6];
+        //             // int testx = 2;
+        //             // int testy = 5;
+
+        //             // Vector2Int hitPosition = new Vector2Int(testx, testy);
+        //             // Get the last move from the list
+        //             string lastMove = lichessMoveList[lichessMoveList.Count - 1];
+
+        //             // Convert the last move from algebraic notation to vector notation
+        //             Vector2Int[] move = ConvertToVectorNotation(lastMove);
+
+        //             // Extract the start position from the move
+        //             Vector2Int startPosition = move[0];
+
+        //             // Extract the end position from the move
+        //             Vector2Int endPosition = move[1];
+
+        //             // Check if there's a piece at the start position
+        //             // ChessPiece blackP = chessPieces[startPosition.x, startPosition.y];
+
+        //             // // Define the hit position (e.g., where the piece is moving to)
+        //             // Vector2Int hitPosition = endPosition;
+        //             // int testx = hitPosition.x;
+        //             // int testy = hitPosition.y;
+
+        //             ChessPiece blackP = chessPieces[2, 6];
+        //             int testx = 2;
+        //             int testy = 5;
+
+        //             Vector2Int hitPosition = new Vector2Int(testx, testy);
+
+        // // // Check if the piece exists and if it's a black piece
+        // // if (blackP != null && blackP.team == 1)
+
+        //             if (blackP != null)
+        //             {
+        //                 if (blackP.team == 1) // Check it's a black piece just to be sure
+        //                 {
+        //                     // Move the test pawn
+        //                     MoveTo(blackP, hitPosition.x, hitPosition.y);
+
+        //                     // Update chessPieces array with the new position of blackP
+        //                     chessPieces[hitPosition.x, hitPosition.y] = blackP;
+        //                     chessPieces[blackP.currentX, blackP.currentY] = null;
+
+        //                     // Update blackP's current position
+        //                     blackP.currentX = hitPosition.x;
+        //                     blackP.currentY = hitPosition.y;
+        //                 }
+
+        //                 // Apply additional logic if needed
+        //                 Plane horizantalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
+        //                 float distance = 0.0f;
+        //                 if (horizantalPlane.Raycast(ray, out distance))
+        //                 {
+        //                     Vector3 testVector = new Vector3(testx, testy, yOffset);
+        //                     blackP.SetPosition(testVector);
+        //                 }
+        //             }
+
+        //             // Update the visual representation of the piece
+        //             Vector3 newPosition = GetTileCenter(hitPosition.x, hitPosition.y);
+        //             blackP.SetPosition(newPosition);
+        //             currentMoveNumber++;
+        //             isWhiteTurn = !isWhiteTurn;
+        //             blackMoveReceived = false;
+
+        //             Debug.Log("Black turn is over");
+        //         }
+
+        // - - - - - - - Testing - - - - - - - 
+
+        // Mouse (Ray) is on board 
+        // Allowed layers to position pieces
+        if (isWhiteTurn)
+        {
+            if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile", "Hover", "Highlight")))
             {
-                if (chessPieces[hitPosition.x, hitPosition.y] != null)
+                // Logging the name of the object that the raycast hit
+                // Debug.Log("Raycast hit: " + info.transform.name);
+
+                // Get tile coordinate hitted by mouse ray
+                Vector2Int hitPosition = LookupTileIndex(info.transform.gameObject);
+
+                // Check if new tile is hovered
+                if (currentHover != hitPosition)
                 {
-                    // Check turn
-                    if ((chessPieces[hitPosition.x, hitPosition.y].team == 0 && isWhiteTurn))
+                    if (currentHover != -Vector2Int.one)
                     {
-                        currentDraggingPiece = chessPieces[hitPosition.x, hitPosition.y];
+                        // Reset previous tile to "Tile" layer
+                        tiles[currentHover.x, currentHover.y].layer = ContainsValidMove(ref availableMoves, currentHover) ? LayerMask.NameToLayer("Highlight") : LayerMask.NameToLayer("Tile");
+                    }
 
-                        // Highlight legal tiles for piece movement
-                        availableMoves = currentDraggingPiece.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                    // Set the new tile to "Hover" layer
+                    currentHover = hitPosition;
+                    tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
+                }
 
-                        // Get list of special moves
-                        specialMove = currentDraggingPiece.GetSpecialMoves(ref chessPieces, ref moveList, ref availableMoves);
+                // Mouse press down
+                if (Input.GetMouseButtonDown(0))
+                {
+                    if (chessPieces[hitPosition.x, hitPosition.y] != null)
+                    {
+                        // Check turn
+                        if ((chessPieces[hitPosition.x, hitPosition.y].team == 0 && isWhiteTurn) || (chessPieces[hitPosition.x, hitPosition.y].team == 1 && !isWhiteTurn))
+                        {
+                            currentDraggingPiece = chessPieces[hitPosition.x, hitPosition.y];
 
-                        // Check prevent
-                        PreventCheck();
+                            // Highlight legal tiles for piece movement
+                            availableMoves = currentDraggingPiece.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
 
-                        // Highlight valid move tiles
-                        HighlightTiles();
+                            // Get list of special moves
+                            specialMove = currentDraggingPiece.GetSpecialMoves(ref chessPieces, ref moveList, ref availableMoves);
+
+                            // Check prevent
+                            PreventCheck();
+
+                            // Highlight valid move tiles
+                            HighlightTiles();
+                        }
                     }
                 }
+
+
+                // Mouse realeasing with a chess piece
+                if (currentDraggingPiece != null && Input.GetMouseButtonUp(0))
+                {
+                    Vector2Int previousPosition = new Vector2Int(currentDraggingPiece.currentX, currentDraggingPiece.currentY);
+                    //Debug.Log("move to: " + currentDraggingPiece, hitPosition.x, hitPosition.y);
+                    string a = hitPosition.x.ToString();
+                    string b = hitPosition.y.ToString();
+                    //Debug.Log("Current Move number is " + currentMoveNumber);
+                    //Debug.Log("move to: " + a + ", " + b);
+                    bool validMove = MoveTo(currentDraggingPiece, hitPosition.x, hitPosition.y);
+                    //Debug.Log("Starting delay?");
+                    StartCoroutine(BlackMoveCoroutine());
+                    //Debug.Log("Ending delay?");
+                    // No valid move
+                    if (!validMove)
+                    {
+                        Debug.Log("Blacks got here");
+                        currentDraggingPiece.SetPosition(GetTileCenter(previousPosition.x, previousPosition.y));
+                        currentDraggingPiece = null;
+                    }
+
+                    else
+                    {
+                        currentDraggingPiece = null;
+                    }
+                    RemoveHighlightTiles();
+                }
             }
 
-            // Mouse releasing with a chess piece
-            if (currentDraggingPiece != null && Input.GetMouseButtonUp(0))
+            // Mouse (Ray) is not on chessboard
+            else
             {
-                Vector2Int previousPosition = new Vector2Int(currentDraggingPiece.currentX, currentDraggingPiece.currentY);
-
-                bool validMove = MoveTo(currentDraggingPiece, hitPosition.x, hitPosition.y);
-                // No valid move
-                if (!validMove)
+                if (currentHover != -Vector2Int.one)
                 {
-                    currentDraggingPiece.SetPosition(GetTileCenter(previousPosition.x, previousPosition.y));
-                    currentDraggingPiece = null;
+                    // Reset the previous tile to "Tile" layer
+                    tiles[currentHover.x, currentHover.y].layer = ContainsValidMove(ref availableMoves, currentHover) ? LayerMask.NameToLayer("Highlight") : LayerMask.NameToLayer("Tile");
+                    currentHover = -Vector2Int.one;
                 }
 
-                else
+                // release chesspiece after dragging
+                if (currentDraggingPiece && Input.GetMouseButtonUp(0))
                 {
+                    currentDraggingPiece.SetPosition(GetTileCenter(currentDraggingPiece.currentX, currentDraggingPiece.currentY));
                     currentDraggingPiece = null;
+                    RemoveHighlightTiles();
                 }
-                RemoveHighlightTiles();
-                //isWhiteTurn = false; // After white's move, set isWhiteTurn to false
+            }
+
+            // Dragging effect
+            if (currentDraggingPiece)
+            {
+                Plane horizantalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
+                float distance = 0.0f;
+                if (horizantalPlane.Raycast(ray, out distance))
+                {
+                    currentDraggingPiece.SetPosition(ray.GetPoint(distance));
+                }
             }
         }
 
-        // Mouse (Ray) is not on chessboard
         else
         {
-            if (currentHover != -Vector2Int.one)
+            //Debug.Log("ingame");
+            if (blackMoveReceived)
             {
-                // Reset the previous tile to "Tile" layer
-                tiles[currentHover.x, currentHover.y].layer = ContainsValidMove(ref availableMoves, currentHover) ? LayerMask.NameToLayer("Highlight") : LayerMask.NameToLayer("Tile");
-                currentHover = -Vector2Int.one;
-            }
+                //Debug.Log("Black move received");
+                //if (!isWhiteTurn)
+                //{
+                //Debug.Log("Black turn is about to happen");
+                //Debug.Log("Current Move number is " + currentMoveNumber);
 
-            // release chesspiece after dragging
-            if (currentDraggingPiece && Input.GetMouseButtonUp(0))
-            {
-                currentDraggingPiece.SetPosition(GetTileCenter(currentDraggingPiece.currentX, currentDraggingPiece.currentY));
-                currentDraggingPiece = null;
-                RemoveHighlightTiles();
-            }
-        }
+                // //here we need to wait on the logic until lichessMoveList is the same length as currentMoveNumber
+                //foreach (string wah in lichessMoveList)
+                // {
+                //     Debug.Log(wah);
+                // }
+                // STATIC TEST CASE FOR BLACK MOVE
 
-        // Dragging effect
-        if (currentDraggingPiece)
-        {
-            Plane horizantalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
-            float distance = 0.0f;
-            if (horizantalPlane.Raycast(ray, out distance))
-            {
-                currentDraggingPiece.SetPosition(ray.GetPoint(distance));
+                // ChessPiece blackP = chessPieces[2, 6];
+                // int testx = 2;
+                // int testy = 5;
+
+                // Vector2Int hitPosition = new Vector2Int(testx, testy);
+
+                // DYNAMIC TEST CASE FOR BLACK MOVE
+                string lastMoveTemp = lichessMoveList[lichessMoveList.Count - 1];
+                Vector2Int[] tempMove = ConvertToVectorNotation(lastMoveTemp);
+                Vector2Int startPosition = tempMove[0];
+                Vector2Int endPosition = tempMove[1];
+
+                ChessPiece blackP = chessPieces[startPosition.x, startPosition.y];
+
+                //chessPieces[hitPosition.x, hitPosition.y].team = 1;
+
+                int testx = endPosition.x;
+                int testy = endPosition.y;
+
+                Vector2Int hitPosition = new Vector2Int(testx, testy);
+                //chessPieces[hitPosition.x, hitPosition.y].team = 1;
+
+                // // Check if the piece exists and if it's a black piece
+                // if (blackP != null && blackP.team == 1)
+
+                if (blackP != null)
+                {
+                    if (blackP.team == 1) // Check it's a black piece just to be sure
+                    {
+                        // Move the test pawn
+                        //MoveTo(blackP, hitPosition.x, hitPosition.y);
+
+                        if (chessPieces[hitPosition.x, hitPosition.y] != null)
+                        {
+                            chessPieces[hitPosition.x, hitPosition.y].SetScale(Vector3.one * deathSize);
+                            chessPieces[hitPosition.x, hitPosition.y].SetPosition(new Vector3(8 * tileSize, yOffset, -1 * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2) + (Vector3.forward * deathSpacing) * deadWhilesList.Count);
+                        }
+
+
+                        // Update chessPieces array with the new position of blackP
+                        chessPieces[hitPosition.x, hitPosition.y] = blackP;
+
+                        // Change scale and position outside chessboard
+                        chessPieces[blackP.currentX, blackP.currentY] = null;
+
+                        // Update blackP's current position
+                        blackP.currentX = hitPosition.x;
+                    }
+
+                    // Apply additional logic if needed
+                    Plane horizantalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
+                    float distance = 0.0f;
+                    if (horizantalPlane.Raycast(ray, out distance))
+                    {
+                        Vector3 testVector = new Vector3(testx, testy, yOffset);
+                        blackP.SetPosition(testVector);
+                    }
+                }
+
+                // Update the visual representation of the piece
+                Vector3 newPosition = GetTileCenter(hitPosition.x, hitPosition.y);
+                blackP.SetPosition(newPosition);
+                currentMoveNumber++;
+                isWhiteTurn = !isWhiteTurn;
+                blackMoveReceived = false;
+
+                //Debug.Log("Black turn is over wagmi");
             }
         }
     }
-
-    // Method to process black player's move or bot's move
-    private void ProcessBlackMove()
-    {
-        // Implement the logic for black's move or bot's move here
-        //Debug.Log("Black move or bot's move happened");
-        //wait for 5 seconds
-
-        // After processing black's move, set isWhiteTurn to true
-        isWhiteTurn = true;
-    }
-
 
     // Generate Board methods
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
@@ -455,6 +659,7 @@ public class Chessboard : MonoBehaviour
     {
         if (!ContainsValidMove(ref availableMoves, new Vector2Int(x, y)))
         {
+            Debug.Log("- - - - - - Contains invalid move! - - - - - -, " + chessPiece.team);
             return false;
         }
 
@@ -510,21 +715,31 @@ public class Chessboard : MonoBehaviour
             }
         }
 
+        Debug.Log("- - - - - - - Got hereeeeeeee - - - - - -, " + chessPiece.team);
+
+        // Auto move chess
+
+        // - - - - - - - - - - - - Testing - - - - - - - - - 
+        if (chessPieces[x, y] != null)
+        {
+            Debug.Log("- - - - - PLACING ON TOP - - - - -, " + chessPieces[x, y].team);
+        }
+        // - - - - - - - - - - - - Testing - - - - - - - - - 
+
+
         chessPieces[x, y] = chessPiece;
         chessPieces[previousPosition.x, previousPosition.y] = null;
 
         PositionSinglePiece(x, y);
 
-        isWhiteTurn = !isWhiteTurn;
+        //isWhiteTurn = !isWhiteTurn;
+        currentMoveNumber++;
+
         moveList.Add(new Vector2Int[] { previousPosition, new Vector2Int(x, y) });
 
         processSpecialMove();
 
-        if (CheckForCheckmate())
-        {
-            CheckMate(chessPiece.team);
-        }
-
+        // Make move through lichess
         // Retrieve the last move from moveList
         Vector2Int[] lastMove = moveList[moveList.Count - 1];
 
@@ -534,11 +749,20 @@ public class Chessboard : MonoBehaviour
         // Store the UCI notation in mostRecentUserMove
         mostRecentUserMove = uciMove;
 
+        //yield return StartCoroutine(MakeMoveCoroutine(mostRecentUserMove));
         MakeMove(mostRecentUserMove);
-        Debug.Log("Whites most recent move: " + mostRecentUserMove);
+        //MakeMoveCoroutine(mostRecentUserMove);
+
+        //StartCoroutine(MakeMoveCoroutine(mostRecentUserMove));
+        //Debug.Log("Whites most recent move: " + mostRecentUserMove);
         lichessMoveList.Add(mostRecentUserMove);
-        
-        //GetGameInfo();
+
+        StartCoroutine(BlackMoveCoroutine());
+
+
+        //HaveWeReceivedBlackMove();
+
+        isWhiteTurn = !isWhiteTurn;
 
         return true;
 
@@ -920,22 +1144,22 @@ public class Chessboard : MonoBehaviour
         return false;
     }
 
-    private void MakeMove(string move)
+    // Lichess API Calls
+
+    private IEnumerator StartNewGameCoroutine(int level)
     {
-        StartCoroutine(MakeMoveCoroutine(move));
-    }
-    /**
-     * Start the game by making an API call to Lichess to challenge the bot
-     */
-    private IEnumerator StartNewGameCoroutine(int level, string color = "white")
-    {
+        // Create and send the UnityWebRequest
+        string color = "white";
         WWWForm form = new WWWForm();
-        form.AddField("level", level.ToString());  // Level can be adjusted but for now, we'll keep it at 1
-        form.AddField("color", color);  // Specify the color
-        form.AddField("clock.limit", "10800");  // Add clock limit
-        form.AddField("clock.increment", "1");  // Add clock increment
+        form.AddField("level", level.ToString());
+        form.AddField("color", color);
+        form.AddField("clock.limit", "10800");
+        form.AddField("clock.increment", "1");
+
         UnityWebRequest www = UnityWebRequest.Post("https://lichess.org/api/challenge/ai", form);
         www.SetRequestHeader("Authorization", "Bearer " + apiToken);
+
+        // Send the request and wait for it to complete
         yield return www.SendWebRequest();
 
         if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
@@ -944,38 +1168,51 @@ public class Chessboard : MonoBehaviour
         }
         else
         {
-            Debug.Log("Game started, lets go: " + www.downloadHandler.text);
-            
+            Debug.Log("Game started: " + www.downloadHandler.text);
+
             // Parse the JSON response to extract the game ID
             string gameId = ParseGameId(www.downloadHandler.text);
-            Debug.Log("Game ID, lets go: " + gameId);
-            
-            // You can assign the game ID to a class variable if needed
+            Debug.Log("Game ID: " + gameId);
+
+            // Assign the game ID
             this.gameId = gameId;
+
+            // Set the flag indicating that the game ID has been stored
+            gameIdStored = true;
         }
-        yield return new WaitForSeconds(1f); // Adjust as needed
+
+        www.Dispose(); // Dispose the UnityWebRequest
     }
-    // Define classes to deserialize JSON response
-    [System.Serializable]
-    public class State
+
+    private IEnumerator WaitForGameId()
     {
-        public string type;
-        public string moves;
-        public int wtime;
-        public int btime;
-        public int winc;
-        public int binc;
-        public string status;
+        // Wait until the game ID is stored
+        while (!gameIdStored)
+        {
+            yield return null;
+        }
+
+        // Continue with the program
+        Debug.Log("Game ID stored. Continuing with the program...");
+    }
+
+    private string ParseGameId(string jsonResponse)
+    {
+        // Deserialize the JSON string into GameIdData object
+        GameIdData data = JsonUtility.FromJson<GameIdData>(jsonResponse);
+
+        // Return the game ID
+        return data.id;
     }
 
     [System.Serializable]
-    public class RootObject
+    public class GameIdData
     {
         public string id;
-        public State state;
     }
 
 
+    // make a move through lichess
     private IEnumerator MakeMoveCoroutine(string move)
     {
         WWWForm form = new WWWForm();
@@ -992,31 +1229,12 @@ public class Chessboard : MonoBehaviour
         }
         else
         {
-            Debug.Log("White Move made was: " + move);
+            //Debug.Log("White Move made was: " + move);
         }
     }
 
 
-
-    private string ParseGameId(string jsonResponse)
-    {
-        // Deserialize the JSON string into GameIdData object
-        GameIdData data = JsonUtility.FromJson<GameIdData>(jsonResponse);
-
-        // Return the game ID
-        return data.id;
-    }
-
-    [System.Serializable]
-    public class GameIdData
-    {
-        public string id;
-    }
-    public class MostRecentUserMove
-    {
-        public string move;
-    }
-
+    // Convert the last move to UCI notation
     private string ConvertToUCI(Vector2Int[] move)
     {
         // Convert the start position to algebraic notation
@@ -1033,28 +1251,62 @@ public class Chessboard : MonoBehaviour
         // Return the UCI move
         return uciMove;
     }
-
+    // algebraic notation helper function
     private string ConvertToAlgebraicNotation(int x, int y)
     {
         char file = (char)('a' + x);
         int rank = y + 1;
         return $"{file}{rank}";
     }
-
-    private IEnumerator GameSetupAndStreamEvents()
-    {
-        int default_level = 1;  // Default level is 1
-        // Start a new game and wait for it to complete
-        yield return StartCoroutine(StartNewGameCoroutine(default_level));
-
-        // Start event streaming in the background
-        streamingCoroutine = StartCoroutine(StreamEvents());
-    }
-
     // Method to handle event streaming
-    private IEnumerator StreamEvents()
+    // private IEnumerator StreamEventsCoroutine()
+    // {
+    //     Debug.Log("StreamEvents coroutine started.");
+
+    //     while (streaming)
+    //     {
+    //         string streamurl = $"https://lichess.org/api/board/game/stream/{gameId}";
+    //         using (UnityWebRequest request = UnityWebRequest.Get(streamurl))
+    //         {
+    //             request.SetRequestHeader("Authorization", "Bearer " + apiToken);
+    //             request.SetRequestHeader("Accept", "application/x-ndjson");
+
+    //             yield return request.SendWebRequest();
+
+    //             if (request.result == UnityWebRequest.Result.Success)
+    //             {
+    //                 using (StreamReader reader = new StreamReader(new MemoryStream(request.downloadHandler.data)))
+    //                 {
+    //                     string line;
+    //                     while ((line = reader.ReadLine()) != null)
+    //                     {
+    //                         if (!string.IsNullOrEmpty(line))
+    //                         {
+    //                             //Received JSON data 53424: {"type":"gameState","moves":"g2g4","wtime":10800000,"btime":10800000,"winc":1000,"binc":1000,"status":"s
+    //                             //onyl do the debug log if is of type gameState, example json in live above
+    //                             if (IsGameState(line))
+    //                             {
+    //                                 Debug.Log("Received JSON data: " + line); // Log received JSON data
+    //                                 string moves = ExtractMoves(line);
+    //                                 Debug.Log("Moves: " + moves);
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 Debug.LogError("Failed to connect to the event stream: " + request.error); // Log error message
+    //             }
+    //         }
+
+    //         // Wait before reconnecting
+    //         yield return new WaitForSeconds(5); // Adjust as needed
+    //     }
+    // }
+    private IEnumerator StreamEventsCoroutine()
     {
-        Debug.Log("StreamEvents coroutine started.");
+        Debug.Log("Stream event coroutine started.");
 
         while (streaming)
         {
@@ -1068,37 +1320,184 @@ public class Chessboard : MonoBehaviour
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    using (StreamReader reader = new StreamReader(new MemoryStream(request.downloadHandler.data)))
+                    //string[] lines = request.downloadHandler.text.Split('\n');
+                    string[] lines = request.downloadHandler.text.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (string line in lines)
                     {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
+                        if (!string.IsNullOrEmpty(line))
                         {
-                            if (!string.IsNullOrEmpty(line))
+                            //Debug.Log("Received CS Event: " + line); // Log received JSON data
+                            if (line.Contains("gameState"))
                             {
-                                Debug.Log("Received JSON data: " + line); // Log received JSON data
+                                string moves = ExtractMoves(line);
+                                List<string> res = new List<string>();
+
+                                // Split moves and add them to res
+                                string[] splitMoves = moves.Split(' ');
+                                res.AddRange(splitMoves);
+
+                                //lichessMoveList has the current moves ive stored
+
+                                if (res.Count == lichessMoveList.Count + 1 && lichessMoveList.Count != 0)
+                                {
+                                    lichessMoveList.Add(res[res.Count - 1]);
+                                    //Debug.Log("fuck this shit");
+                                    blackMoveReceived = true;
+                                }
+
+                                // Split moves and add them to temp
+                                //string[] splitMoves = moves.Split(' ');
+                                //temp.AddRange(splitMoves);
+
+
+
+
+                                //Debug.Log("Moves: " + moves);
+                                //new list to store moves
+                                // if(temp.count > lichessMoveList.length)
+                                // {
+                                //     lichessMoveList.Add(temp[temp.length-1]);
+                                //     Debug.Log("Black's move received is: " + temp[temp.length-1]);
+                                // }
+
+                                // // Reverse temp to handle if the same move has occurred twice and find the most recent occurrence
+                                // Array.Reverse(temp);
+
+                                // if (temp[0] != mostRecentUserMove && temp[0] != "")
+                                // {
+                                //     //add the move to the lichessMoveList
+                                //     lichessMoveList.Add(temp[0]);
+                                //     Debug.Log("Black's move received is: " + temp[0]);
+                                // }
+
+                                // // Find the index of mostRecentUserMove
+                                // int index = Array.IndexOf(temp, mostRecentUserMove);
+
+                                // // Check if the index of mostRecentUserMove is the second-to-last index in the array
+                                // if (index == temp.Length - 2)
+                                // {
+                                //     // second to last means that last is black
+                                //     //blackMoveReceived = true;
+                                //     //isWhiteTurn = false;
+                                // }
+
                             }
+                            //string tempmoves = ExtractMoves(line);
+                            //Debug.Log("Moves: " + tempmoves);
+
+
                         }
                     }
                 }
                 else
                 {
-                    Debug.LogError("Failed to connect to the event stream: " + request.error); // Log error message
+                    Debug.LogError("Failed to connect to the event stream on Chessboard: " + request.error); // Log error message
                 }
             }
 
             // Wait before reconnecting
-            yield return new WaitForSeconds(5); // Adjust as needed
+            yield return new WaitForSeconds(3); // Adjust as needed
         }
     }
 
-
-    private void OnDestroy()
+    private bool IsGameState(string jsonData)
     {
-        // Stop the coroutine when the object is destroyed
-        if (streamingCoroutine != null)
+        // Check if the JSON data contains "gameState" as the value of "type"
+        int typeIndex = jsonData.IndexOf("\"type\"");
+        if (typeIndex != -1)
         {
-            StopCoroutine(streamingCoroutine);
+            int colonIndex = jsonData.IndexOf(':', typeIndex);
+            int commaIndex = jsonData.IndexOf(',', colonIndex);
+
+            if (colonIndex != -1 && commaIndex != -1)
+            {
+                string typeValue = jsonData.Substring(colonIndex + 1, commaIndex - colonIndex - 1).Trim(' ', '"');
+
+                return typeValue == "gameState";
+            }
         }
+
+        return false;
     }
+    //extract moves from json data
+    public string ExtractMoves(string jsonData)
+    {
+        string moves = null;
+
+        // Find the index of the "moves" key
+        int movesIndex = jsonData.IndexOf("\"moves\"");
+
+        if (movesIndex != -1)
+        {
+            // Find the start of the moves value
+            int movesValueStart = jsonData.IndexOf(':', movesIndex) + 1;
+
+            // Find the end of the moves value
+            int movesValueEnd = jsonData.IndexOf(',', movesValueStart);
+
+            // If a comma is not found, use the end of the string
+            if (movesValueEnd == -1)
+            {
+                movesValueEnd = jsonData.Length - 1;
+            }
+
+            // Extract the moves substring
+            moves = jsonData.Substring(movesValueStart, movesValueEnd - movesValueStart);
+
+            // Remove surrounding quotes and trim any whitespace
+            moves = moves.Trim('"', ' ').Replace("\\", string.Empty);
+        }
+
+        return moves;
+    }
+
+    private Vector2Int[] ConvertToVectorNotation(string uciMove)
+    {
+        // Split the UCI move into two parts: start square and end square
+        string fromSquare = uciMove.Substring(0, 2);
+        string toSquare = uciMove.Substring(2, 2);
+
+        // Convert the start square from algebraic notation to vector notation
+        Vector2Int startSquare = ConvertToVectorNotationHelper(fromSquare);
+        // Convert the end square from algebraic notation to vector notation
+        Vector2Int endSquare = ConvertToVectorNotationHelper(toSquare);
+
+        // Return the move as a pair of Vector2Int representing start and end positions
+        return new Vector2Int[] { startSquare, endSquare };
+    }
+
+    // Convert algebraic notation to vector notation helper function
+    private Vector2Int ConvertToVectorNotationHelper(string algebraicNotation)
+    {
+        // Extract the file and rank from algebraic notation
+        int x = algebraicNotation[0] - 'a';
+        int y = algebraicNotation[1] - '1';
+
+        // Return the vector notation
+        return new Vector2Int(x, y);
+    }
+
+    private void MakeMove(string move)
+    {
+        StartCoroutine(MakeMoveCoroutine(move));
+    }
+
+    private void HaveWeReceivedBlackMove()
+    {
+        StartCoroutine(BlackMoveCoroutine());
+        Debug.Log("WE FINALLY GOT IT WORKING");
+    }
+
+    private IEnumerator BlackMoveCoroutine()
+    {
+        // Wait for 6 seconds
+        Debug.Log("in coroutine after waiting for 6 seconds");
+        yield return new WaitForSeconds(6f);
+
+        //Debug.Log("in coroutine after waiting for 6 seconds");
+        // Continue with the rest of your logic...
+    }
+
 
 }
