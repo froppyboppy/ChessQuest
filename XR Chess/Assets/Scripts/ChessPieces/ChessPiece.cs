@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
-using UnityEditor.ShaderGraph;
 using UnityEngine;
 
 public enum ChessPieceType

@@ -1,0 +1,21 @@
+# ninja log v5
+3	593	1714126862921489095	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	e9510a324d67f4da
+3	870	1714126863201554748	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	fdcf023ab0b0c6a
+594	929	1714126863240853136	/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/4245h6g5/obj/arm64-v8a/libswappywrapper.so	137226ef0af2edeb
+2	847	1714126863178517130	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	916574348b895571
+2	835	1714126863163590022	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	3e30b4539d4adbcb
+2	1084	1714126863415680868	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	4b5e80691c97cd8e
+3	936	1714126863267536489	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	6bd31941f0f44323
+1	955	1714126863286388624	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	69a0e55562190fdc
+1	1141	1714126863472258604	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	5d54244141bb381f
+1141	1235	1714126863544986194	/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/4245h6g5/obj/arm64-v8a/libgame.so	db9c38ecaaacec7
+4	672	1714127404086125903	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	e9510a324d67f4da
+673	897	1714127404291329100	/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/4245h6g5/obj/arm64-v8a/libswappywrapper.so	137226ef0af2edeb
+3	974	1714127404388078388	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	3e30b4539d4adbcb
+2	989	1714127404403037496	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	916574348b895571
+3	1007	1714127404421566215	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	fdcf023ab0b0c6a
+4	1072	1714127404485719255	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	6bd31941f0f44323
+2	1090	1714127404504573806	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	69a0e55562190fdc
+3	1214	1714127404628542612	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	4b5e80691c97cd8e
+1	1276	1714127404690124621	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	5d54244141bb381f
+1276	1363	1714127404758361522	/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/4245h6g5/obj/arm64-v8a/libgame.so	db9c38ecaaacec7

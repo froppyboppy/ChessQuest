@@ -1,0 +1,8 @@
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/GameActivity/CMakeFiles/game.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/FramePacing/CMakeFiles/swappywrapper.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/FramePacing/CMakeFiles/edit_cache.dir
+/Users/juangamez/Desktop/Programming/THISISATEST/imdying/XR Chess/.utmp/RelWithDebInfo/4245h6g5/arm64-v8a/FramePacing/CMakeFiles/rebuild_cache.dir
